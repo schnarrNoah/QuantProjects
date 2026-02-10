@@ -1,0 +1,7 @@
+POLYGON_API_KEY = ""
+
+TICKERS = ["C:EURUSD", "X:BTCUSD"]
+SESSION = "newyork"
+
+START = "2025-01-01"
+END = "2025-01-31"
