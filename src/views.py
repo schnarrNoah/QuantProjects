@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 
-
 def plot_price(df, pair):
     plt.figure(figsize=(14, 6))
     plt.plot(df.index, df["c"], label="Close")
@@ -13,7 +12,12 @@ def plot_price(df, pair):
 
 
 def plot_returns(ret_dict, start, end):
-    fig, axes = plt.subplots(1, len(ret_dict), figsize=(14, 5), sharey=False)
+    n = len(ret_dict)
+    fig, axes = plt.subplots(1, n, figsize=(14, 5), sharey=False)
+
+    # Wenn nur 1 Ticker, axes ist kein Array → in Liste packen
+    if n == 1:
+        axes = [axes]
 
     fig.suptitle(f"Returns Series {start} - {end}")
 
