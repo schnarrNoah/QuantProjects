@@ -2,18 +2,22 @@
 <html>
     <head>
         {%metas%}
-        <title>The Capital Fund Terminal</title>
+        <title>QuantTerminal | Strategy Analyzer</title>
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="assets/style.css">
         {%favicon%}
         {%css%}
     </head>
-    <body style="margin: 0; font-family: sans-serif; background-color: #f4f4f4;">
-
-        <header style="background: #1a1a1a; color: grey; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">QUANTITATIVE BACKTESTING</h1>
-            <p style="margin: 5px 0 0 0; color: #888;">Logic-Driven Analysis Engine</p>
+    <body>
+        <header>
+            <div>
+                <h1>QUANT TERMINAL</h1>
+                <div class="header-sub">STATUS: ANALYSIS_COMPLETE // ENGINE: POLARS_JIT</div>
+            </div>
+            <div class="status-tag">CORE_CONNECTED</div>
         </header>
 
-        <div class="container" style="padding: 20px;">
+        <div class="container">
             {%app_entry%}
         </div>
 

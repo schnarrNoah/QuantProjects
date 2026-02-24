@@ -1,109 +1,123 @@
-import pandas as pd
-import requests
 import time
-from datetime import datetime
+import requests
+import pandas as pd
+import polars as pl
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-import numpy as np
+from pathlib import Path
 
 
 class API:
-    def __init__(self, api_key, tickers, session, frame, start, end, save_dir):
+    def __init__(self, api_key, tickers, frame, parquet_file, start_fallback="2024-01-01"):
         self.apikey = api_key
         self.tickers = tickers
-        self.session = session
         self.frame = frame
-        self.start = start
-        self.end = end
-        self.save_dir = save_dir
+        self.parquet_file = Path(parquet_file)
+        self.start_fallback = start_fallback
+
+    def get_last_timestamp(self):
+        """Liest den letzten Zeitstempel aus der Parquet-Datei, ohne sie ganz zu laden."""
+        if not self.parquet_file.exists():
+            return None
+        try:
+            # Nutzt Lazy-Loading für maximale Geschwindigkeit
+            last_ts = pl.scan_parquet(self.parquet_file).select(pl.col("t").tail(1)).collect().item()
+            return last_ts
+        except Exception as e:
+            print(f"Hinweis: Konnte letzten Zeitstempel nicht lesen ({e}).")
+            return None
 
     def run(self):
-        all_returns = {}
+        """Hauptmethode: Berechnet Startzeit automatisch und startet Download."""
+        # 1. Startzeit bestimmen
+        last_ts = self.get_last_timestamp()
 
+        if last_ts:
+            # Wir starten 1 Minute nach dem letzten Eintrag
+            start_dt = last_ts + timedelta(minutes=1)
+            start_str = start_dt.strftime("%Y-%m-%d")
+            print(f"Fortsetzung gefunden: Letzter Datenpunkt {last_ts}. Starte ab {start_str}")
+        else:
+            start_str = self.start_fallback
+            print(f"Kein Bestand gefunden. Initialer Download ab {start_str}")
+
+        # 2. Endzeit ist immer 'heute'
+        end_str = datetime.now().strftime("%Y-%m-%d")
+
+        # 3. Download für jeden Ticker
         for ticker in self.tickers:
-            df = self.download_ticker_data(
+            print(f"\n--- Syncing {ticker} ---")
+            df_pandas = self.download_ticker_data(
                 ticker,
-                datetime.strptime(self.start, "%Y-%m-%d"),
-                datetime.strptime(self.end, "%Y-%m-%d")
+                datetime.strptime(start_str, "%Y-%m-%d"),
+                datetime.strptime(end_str, "%Y-%m-%d")
             )
 
-            # keine CSV laden, direkt weiter
-            all_returns[ticker] = self.compute_log_returns(df)  # optional: Session-Filter weglassen
+            if not df_pandas.empty:
+                self.append_to_parquet(df_pandas)
+            else:
+                print(f"Keine neuen Daten für {ticker} verfügbar.")
 
-            # Session filtern
-            df_sess = self.filter_session(df, self.session)
-            all_returns[ticker] = self.compute_log_returns(df_sess)
-
-    def fetch_chunk(self, ticker, start, end, multiplier=1, retries=2):
+    def fetch_chunk(self, ticker, start, end, multiplier=1, retries=3):
         url = (
             f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/"
             f"{multiplier}/{self.frame}/{start}/{end}"
             f"?adjusted=true&sort=asc&limit=50000&apiKey={self.apikey}"
         )
-
         for attempt in range(retries):
-            r = requests.get(url)
-            if r.status_code == 200:
-                data = r.json()
-                return pd.DataFrame(data.get("results", []))
-            print(f"Retry {attempt+1} failed for {ticker} {self.start} → {end}: {r.text}")
+            try:
+                r = requests.get(url, timeout=15)
+                if r.status_code == 200:
+                    data = r.json()
+                    return pd.DataFrame(data.get("results", []))
+                elif r.status_code == 429:
+                    print("Rate Limit (429). Warte 60s...")
+                    time.sleep(60)
+                else:
+                    print(f"Fehler {r.status_code}: {r.text}")
+            except Exception as e:
+                print(f"Verbindungsfehler: {e}")
             time.sleep(5)
         return pd.DataFrame()
-
 
     def download_ticker_data(self, ticker, start_date, end_date):
         current = start_date
         all_chunks = []
-
-        while current < end_date:
-            chunk_end = min(current + relativedelta(months=1), end_date)
-            start_str = current.strftime("%Y-%m-%d")
-            end_str = chunk_end.strftime("%Y-%m-%d")
-            print(f"Fetching {ticker}: {start_str} → {end_str}")
-
-            df = self.fetch_chunk(ticker, start_str, end_str, self.frame)
-            if not df.empty:
-                df["t"] = pd.to_datetime(df["t"], unit="ms", utc=True)
-                df.set_index("t", inplace=True)
-                all_chunks.append(df)
-
-            current = chunk_end
-            time.sleep(13)  # Rate-Limit-Schutz
-
-        if not all_chunks:
-            print(f"No data for {ticker}")
+        # Falls start_date heute ist, überspringen
+        if start_date.date() >= end_date.date():
             return pd.DataFrame()
 
-        df = pd.concat(all_chunks)
-        df = df[~df.index.duplicated(keep="last")].sort_index()
+        while current <= end_date:
+            chunk_end = min(current + relativedelta(months=1), end_date)
+            df = self.fetch_chunk(ticker, current.strftime("%Y-%m-%d"), chunk_end.strftime("%Y-%m-%d"))
+            if not df.empty:
+                df["t"] = pd.to_datetime(df["t"], unit="ms", utc=True)
+                all_chunks.append(df)
+            current = chunk_end + relativedelta(days=1)
+            time.sleep(12)  # Polygon Free Tier
 
-        # Neuer Dateiname mit Zeitraum
-        start_str_file = start_date.strftime("%Y-%m-%d")
-        end_str_file = end_date.strftime("%Y-%m-%d")
-        file_path = SAVE_DIR / f"{ticker.replace(':','_')}_{start_str_file}_{end_str_file}_{self.frame}.csv"
+        return pd.concat(all_chunks).drop_duplicates(subset=["t"]).sort_values("t") if all_chunks else pd.DataFrame()
 
-        df.to_csv(file_path, index_label="t")
-        print(f"Saved → {file_path}")
-        return df
+    def append_to_parquet(self, df_pandas):
+        new_df = pl.from_pandas(df_pandas).with_columns([
+            pl.col("t").dt.replace_time_zone(None).dt.cast_time_unit("us"),
+            pl.col(["o", "h", "l", "c", "v", "vw"]).cast(pl.Float32)
+        ]).select(["t", "o", "h", "l", "c", "v", "vw"])
 
+        if self.parquet_file.exists():
+            existing_df = pl.read_parquet(self.parquet_file).with_columns(pl.col("t").dt.cast_time_unit("us"))
+            combined_df = pl.concat([existing_df, new_df])
+        else:
+            combined_df = new_df
 
-    def filter_session(self, df):
-        """Filtert Daten nach Session. Wenn session leer, wird nicht gefiltert."""
-        if not self.session:
-            return df
-
-        sessions = {
-            "london": (8, 16),
-            "newyork": (13, 21),
-            "overlap": (13, 16),
-        }
-        if self.session not in sessions:
-            raise ValueError(f"Unknown session: {self.session}")
-
-        start, end = sessions[self.session]
-        return df.between_time(f"{start}:00", f"{end}:00")
-
-    def compute_log_returns(df, price_col="c"):
-        """Berechnet Log-Returns."""
-        returns = np.log(df[price_col]).diff()
-        returns.name = "log_returns"
-        return returns.dropna()
+        combined_df = (
+            combined_df.unique(subset="t").sort("t")
+            .upsample(time_column="t", every="1m")
+            .with_columns([
+                pl.col(["o", "h", "l", "c", "vw"]).forward_fill(),
+                pl.col("v").fill_null(0)
+            ])
+        )
+        self.parquet_file.parent.mkdir(parents=True, exist_ok=True)
+        combined_df.write_parquet(self.parquet_file, compression="snappy")
+        print(f"Update Erfolg: {combined_df.height:,} Zeilen insgesamt.")

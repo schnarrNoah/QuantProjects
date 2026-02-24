@@ -1,0 +1,114 @@
+/* Bloomberg Terminal Style */
+body {
+    margin: 0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #000000; /* Tiefschwarz */
+    color: #bcbcbc; /* Klassisches Terminal-Grau */
+}
+
+.container {
+    padding: 15px;
+    max-width: 100%;
+    margin: 0;
+}
+
+/* Header - Orange Bar */
+header {
+    background: #f18e00; /* Orange */
+    border-bottom: 2px solid #333;
+    padding: 5px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    letter-spacing: 0;
+    color: #000000; /* Schwarze Schrift auf Orange */
+    text-shadow: none;
+}
+
+.header-sub {
+    font-size: 0.7rem;
+    color: #333;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: bold;
+}
+
+.status-tag {
+    background: #000;
+    border: 1px solid #333;
+    padding: 2px 8px;
+    border-radius: 0; /* Harte Kanten */
+    font-size: 0.7rem;
+    color: #00ff00;
+}
+
+/* Metric Cards - Kompakt und Tabellarisch */
+.metric-container {
+    display: flex;
+    gap: 0; /* Keine Lücken wie im Terminal */
+    margin-bottom: 10px;
+    border: 1px solid #333;
+}
+
+.metric-card {
+    flex: 1;
+    background: #111;
+    padding: 10px;
+    border-radius: 0;
+    border-right: 1px solid #333; /* Trennung wie in einer Tabelle */
+}
+
+.metric-card:last-child {
+    border-right: none;
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.65rem;
+    color: #ff9900; /* Bernstein-Farbe für Labels */
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    font-family: 'JetBrains Mono', monospace;
+    color: #ffffff;
+}
+
+/* Bloomberg Profit Colors */
+.profit-pos { color: #00ff00 !important; } /* Sattes Terminal-Grün */
+.profit-neg { color: #ff0000 !important; } /* Sattes Terminal-Rot */
+
+/* Plotly Anpassungen - Grid Lines */
+.js-plotly-plot .plotly .gridlayer path {
+    stroke: #222 !important; /* Sehr dezentes Grid */
+}
+
+/* Tabs */
+#tabs-nav {
+    height: 30px !important;
+}
+
+.tab {
+    background-color: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    color: #ccc !important;
+    padding: 5px !important;
+    font-size: 0.8rem !important;
+    border-radius: 0 !important;
+}
+
+.tab--selected {
+    background-color: #333 !important;
+    color: #f18e00 !important; /* Orange Highlight */
+    border-top: 2px solid #f18e00 !important;
+}

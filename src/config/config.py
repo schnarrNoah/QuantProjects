@@ -1,9 +1,1 @@
 POLYGON_API_KEY = "RNi3gmlrt7GprLfPFuYdcpU5gCvlRY1N"
-
-TICKERS = ["X:BTCUSD"]
-SESSION = ""
-FRAME = "minute"
-
-# YYYY-MM-DD
-START = "2024-01-01"
-END = "2026-01-31"

@@ -1,6 +1,6 @@
 from src.process.trader import SMCTrader
 from src.utils.csv_reader import CSVReader
-from src.view.TabbedViewer import plot_modern_backtest
+from src.view.webviewer import visualize_on_html
 from src.process.filter_time import *
 
 class Pipeline:
@@ -46,7 +46,7 @@ class Pipeline:
             else:
                 display_data = self.data
 
-            plot_modern_backtest(display_data, "BTC/USD")
+            visualize_on_html(display_data, "BTC/USD")
         return self
 
 

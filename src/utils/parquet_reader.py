@@ -12,23 +12,29 @@ class ParquetReader:
             raise FileNotFoundError(f"Die Datei {self.parquet_path} wurde nicht gefunden!")
 
     def load_range(self, start, end):
-        # Konvertierung zu datetime (ohne Zeitzone, da wir sie im Converter entfernt haben)
+        # 1. Konvertierung der Eingabe-Strings
         start_dt = dt.datetime.fromisoformat(str(start)).replace(tzinfo=None)
         end_dt = dt.datetime.fromisoformat(str(end)).replace(tzinfo=None)
 
-        # DER ULTIMATIVE LAZY FLOW
-        # Polars scannt hier nur die Metadaten der Parquet-Datei.
-        # Er weiß sofort, wo die Daten für deinen Zeitbereich liegen.
-        # In deiner load_range Methode im ParquetReader:
+        # 2. Lazy Scan
+        q = pl.scan_parquet(self.parquet_path)
+
+        # 3. TYP-Korrektur und Filterung
         return (
-            pl.scan_parquet(self.parquet_path)
-            .filter(pl.col("t").is_between(start_dt, end_dt))
-            .with_columns(
-                # Wir berechnen t_int absolut sicher:
+            q.with_columns([
+                # Falls 't' ein Int64 ist, konvertiere es in Datetime
+                # Falls es schon Datetime ist, schadet dieser Cast nicht
+                pl.col("t").cast(pl.Datetime("ms"))
+            ])
+            .filter(
+                pl.col("t").is_between(start_dt, end_dt)
+            )
+            .with_columns([
+                # t_int Berechnung für Session-Filter
                 (pl.col("t").dt.hour().cast(pl.Int32) * 3600 +
                  pl.col("t").dt.minute().cast(pl.Int32) * 60 +
                  pl.col("t").dt.second().cast(pl.Int32)).alias("t_int")
-            )
-            .select(["t", "o", "h", "l", "c", "v", "vw", "t_int"])
+            ])
+            .sort("t")  # Sicherstellen, dass die Zeitachse stimmt
             .collect()
         )

@@ -19,23 +19,32 @@ def timezone(df):
     return df
 
 
+import polars as pl
+
 def session(df, session_name: str):
+    if session_name is None:
+        print("--- No Session Filter: Monitoring 24/7 ---")
+        return df
+
     sessions = {
-        "asia":         (0, 21600),
-        "frankfurt":    (25200, 54000),
-        "london":       (28800, 57600),
-        "ny":           (46800, 75600),
-        "full":         (0, 86399)
+        "asia": (0, 21600),
+        "frankfurt": (25200, 54000),
+        "london": (28800, 57600),
+        "ny": (46800, 75600),
+        "full": (0, 86399)
     }
 
     session_name = session_name.lower()
+
+    if session_name not in sessions:
+        print(f"Warning: Session '{session_name}' not found. No filtering applied.")
+        return df
+
     start_int, end_int = sessions[session_name]
 
-    # --- DEBUGGING ANFANG ---
+    #debugging
     sample_ints = df.select("t_int").head(5).to_series().to_list()
-    print(f"DEBUG: Erste t_int Werte im DataFrame: {sample_ints}")
-    print(f"DEBUG: Suche Bereich {start_int} bis {end_int}")
-    # --- DEBUGGING ENDE ---
+    print(f"DEBUG: Session: {session_name} | Bereich {start_int} bis {end_int}")
 
     result = df.filter(
         pl.col("t_int").is_between(start_int, end_int)

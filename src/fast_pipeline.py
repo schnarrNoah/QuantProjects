@@ -1,3 +1,5 @@
+import os
+import dash
 from src.utils.parquet_reader import ParquetReader
 from src.process.filter_time import session
 
@@ -49,38 +51,62 @@ class Pipeline:
         return self
 
     def visualize(self):
+        # Ermittle den Ordner, in dem DIESE Datei liegt
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        template_path = os.path.join(base_dir, "layout.html")
+        assets_dir = os.path.join(base_dir, "assets")
+
+        # Dash explizit sagen, wo die Assets (CSS) liegen
+        app = dash.Dash(__name__, assets_folder=assets_dir)
+
+        if os.path.exists(template_path):
+            with open(template_path, "r", encoding="utf-8") as f:
+                app.index_string = f.read()
+                print(f"DEBUG: layout.html erfolgreich geladen.")
+
+        else:
+            print(f"!!! FEHLER: layout.html nicht gefunden unter {template_path}")
         if self.trading_data is not None:
             print("--- Bereite Dashboard vor ---")
 
+            # Finde die PnL Spalte der letzten ausgeführten Strategie
             pnl_cols = [col for col in self.trading_data.columns if col.startswith("pnl_")]
-
             if not pnl_cols:
-                print("!!! Fehler: Keine PnL-Spalten gefunden. Hat die Strategie Spalten angelegt?")
+                print("!!! Fehler: Keine PnL-Spalten gefunden.")
                 return self
 
-            cols_to_select = ["t", "o", "h", "l", "c"] + pnl_cols
-            df_subset = self.trading_data.select(cols_to_select)
+            # Nimm die aktuellste PnL Spalte (die der letzten Strategie in der Liste)
+            main_pnl_col = pnl_cols[-1]
 
-            main_pnl_col = pnl_cols[0]
-            df_plot_data = df_subset.rename({main_pnl_col: "pnl_curve"})
+            # WICHTIG: Nutze direkt trading_data für die exakte Anzahl
+            total_candles_final = self.trading_data.height
 
-            # --- Ab hier wie bisher ---
-            total_candles = df_plot_data.height
+            # Daten für Chart und Performance vorbereiten
+            df_plot_data = self.trading_data.select(["t", "o", "h", "l", "c", main_pnl_col])
+            df_plot_data = df_plot_data.rename({main_pnl_col: "pnl_curve"})
+
+            # Letzte 5000 Kerzen für den Chart (für Performance im Browser)
             df_chart = df_plot_data.tail(5000).to_pandas()
 
-            step = max(1, total_candles // 5000)
+            # Performance-Kurve ausdünnen für flüssige Darstellung
+            step = max(1, total_candles_final // 5000)
             df_perf = df_plot_data.gather_every(step).to_pandas()
 
             start_bal = df_plot_data["pnl_curve"].item(0)
             end_bal = df_plot_data["pnl_curve"].item(-1)
 
-            from src.view.TabbedViewer import plot_modern_backtest
-            plot_modern_backtest(df_chart, df_perf, total_candles, start_bal, end_bal, "BTC/USD")
+            print(f"DEBUG Dashboard: Übergebe {total_candles_final} Kerzen.")
+
+            from src.view.webviewer import visualize_on_html
+            visualize_on_html(df_chart, df_perf, total_candles_final, start_bal, end_bal, "BTC/USD")
 
         return self
 
+
     def run(self):
-        (self.load_data()
-         .filter()
-         .execute_strategies()  # Die neue Schleife!
+        self.load_data()
+        print(f"DEBUG: Pipeline hat {len(self.raw_data)} Zeilen nach load_data geladen.")
+
+        (self.filter()
+         .execute_strategies()
          .visualize())
