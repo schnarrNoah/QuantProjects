@@ -1,0 +1,15 @@
+# Python Cache
+__pycache__/
+*.pyc
+
+# Virtual Environment
+.venv/
+venv/
+
+# Große Datensätze (NIEMALS auf GitHub pushen)
+Cryptocurrencies/
+*.parquet
+*.csv
+
+# Dash/Plotly Temp-Files
+.ipynb_checkpoints/
