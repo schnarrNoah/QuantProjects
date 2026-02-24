@@ -1,0 +1,73 @@
+CRYPTO BACKTESTING SYSTEM — CORE PIPELINE
+
+DATA LAYER
+
+    CSV loading and validation
+    Timestamp normalization (UTC)
+    Sorting and deduplication
+    Missing data handling
+    Resampling (optional: minute to higher timeframe)
+    Log return calculation
+    Feature generation (returns, volatility, moving averages)
+
+MARKET FILTERS
+
+    Session filtering (optional, crypto is 24/7)
+    Trend filter (moving average trend or slope)
+    Volatility filter
+    Market regime classification (bull, bear, neutral)
+
+SIGNAL GENERATION
+
+    Entry signal logic
+    Exit signal logic
+    Long and short rules
+    Position sizing rules
+    Risk-reward configuration (1:1, 1:2 etc.)
+    Stop loss and take profit rules
+
+EXECUTION MODEL
+
+    Trade entry price definition
+    Trade exit price definition
+    Transaction costs
+    Slippage model
+    Position tracking
+
+BACKTEST ENGINE
+
+    Iterate through time series
+    Apply signals sequentially
+    Simulate trades
+    Update capital after each trade
+    Store trade log
+    Store position history
+
+PERFORMANCE METRICS
+
+    PnL calculation
+    Cumulative returns
+    Win rate
+    Average trade return
+    Maximum drawdown
+    Sharpe ratio
+    Return volatility
+    Value at Risk (VaR)
+    Expected Shortfall
+
+RESULT ANALYSIS
+
+    Equity curve visualization
+    Trade distribution
+    Return distribution
+    Drawdown plot
+    Strategy summary report
+
+EXTENSIONS (OPTIONAL LATER)
+
+    Multi-asset backtesting
+    Portfolio allocation
+    Walk-forward testing
+    Parameter optimization
+    Monte Carlo simulation
+    Strategy comparison

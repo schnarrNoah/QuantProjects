@@ -46,10 +46,7 @@ class CSVReader:
                     df.set_index('t', inplace=True)
                     df.sort_index(inplace=True)
 
-                    f_min, f_max = df.index.min(), df.index.max()
-
-                    # Filter-Logik
-                    if not (f_max < start_dt or f_min > end_dt):
+                    if not ((df.index.max() < start_dt) or (df.index.min() > end_dt)):
                         mask = (df.index >= start_dt) & (df.index <= end_dt)
                         chunk = df.loc[mask]
 

@@ -16,7 +16,7 @@ class API:
         self.end = end
         self.save_dir = save_dir
 
-    def run_api(self):
+    def run(self):
         all_returns = {}
 
         for ticker in self.tickers:

@@ -1,0 +1,113 @@
+CRYPTO TRADING RESEARCH PIPELINE
+
+DATA MANAGEMENT AND PREPARATION
+
+    Data storage structure (Done)
+    Folder organization by asset and timeframe (Done)
+    CSV import and validation
+    Timestamp handling (UTC normalization)
+    Missing data handling and cleaning
+    Data integrity checks
+    Resampling (minute, hourly, sessions, daily)
+    Feature engineering (returns, volatility, momentum)
+    Dataset versioning
+
+MARKET STRUCTURE FILTERS
+
+    Session filtering (London, New York, Overlap, 24h)
+    Bull vs Bear market regime classification
+    Trend filters (moving averages, slope, momentum)
+    Volatility regime filtering
+    Liquidity filters
+    Volume filters
+    Market condition tagging
+
+SIGNAL AND TRADE LOGIC
+
+    Buy and sell signal definition
+    Long and short position rules
+    Entry and exit logic
+    Risk-reward ratio configuration (1:1, 1:2, etc.)
+    Position sizing rules
+    Stop loss and take profit logic
+    Trade execution assumptions
+    Slippage and transaction cost modeling
+
+MARKET MICROSTRUCTURE FEATURES
+
+    Fair Value Gap (FVG) detection
+    FVG confirmation and retracement logic
+    Order book imbalance analysis (if available)
+    Price inefficiency detection
+    Market momentum signals
+    Volume profile analysis
+
+ASSET LEVEL STATISTICAL ANALYSIS
+
+    Return distribution analysis
+    Linear regression models
+    CAPM estimation
+    Factor beta estimation
+    Fama-French factor modeling (if applicable)
+    Quantile analysis
+    Volatility estimation
+    Downside risk metrics
+    Tail risk analysis
+    Stress testing scenarios
+    Extreme movement detection
+    Unexpected shortfall analysis
+    Autocorrelation and stationarity testing
+
+POSITION AND STRATEGY ANALYSIS
+
+    Trade-level performance analysis
+    Asset vs position performance comparison
+    PnL calculation
+    Cumulative returns
+    Win/loss ratio
+    Risk-adjusted performance metrics
+    Sharpe ratio
+    Sortino ratio
+    Maximum drawdown
+    Value at Risk (VaR)
+    Expected Shortfall (CVaR)
+    Return percentages
+    Position exposure analysis
+
+RISK MANAGEMENT
+
+    Portfolio risk aggregation
+    Position limits
+    Leverage management
+    Drawdown control rules
+    Capital allocation rules
+    Stress test simulations
+
+BACKTESTING FRAMEWORK
+
+    Historical simulation engine
+    Signal validation
+    Walk-forward testing
+    Out-of-sample testing
+    Parameter optimization
+    Strategy robustness testing
+    Benchmark comparison
+
+REPORTING AND VISUALIZATION
+
+    Equity curve visualization
+    Return distribution plots
+    Volatility plots
+    PnL reporting
+    Risk metrics reporting
+    Trade logs and summaries
+    Strategy performance dashboards
+
+FUTURE EXTENSIONS
+
+    Machine learning models for prediction
+    Regime switching models
+    High-frequency execution logic
+    Cross-asset correlation modeling
+    Portfolio optimization methods
+    Real-time trading integration
