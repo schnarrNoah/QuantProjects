@@ -19,8 +19,6 @@ def timezone(df):
     return df
 
 
-import polars as pl
-
 def session(df, session_name: str):
     if session_name is None:
         print("--- No Session Filter: Monitoring 24/7 ---")

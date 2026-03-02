@@ -1,40 +1,35 @@
 from src.strategy.base import BaseStrategy
-from src.process.trader import jit_simulator
+import src.process.filter_fvg as ind
 import polars as pl
 
 
 class SMCStrategy(BaseStrategy):
-    def __init__(self, name="SMC_FVG", initial_balance=10000, rrr=2.0, risk_percent=0.01):
-        super().__init__(name, initial_balance, risk_percent)
-        self.rrr = rrr
+    def run(self, df):
+        # 1. Berechne die Gaps auf den aktuellen Daten
+        df = ind.fvg_1min(df)
 
-    def prepare_features(self, df):
-        print(f"--- Calculating Features: {self.name} ---")
-        return df.with_columns([
-            (pl.col("h").shift(2) < pl.col("l")).alias("bull_fvg"),
-            (pl.col("l").shift(2) > pl.col("h")).alias("bear_fvg"),
-            pl.col("h").shift(2).alias("fvg_top"),
-            pl.col("l").shift(2).alias("fvg_bot")
-        ]).fill_null(False)
-
-    def run_logic(self, df):
-        print(f"--- Running Execution: {self.name} ---")
+        # 2. Erstelle geshiftete "Handels-Levels" (Look-Ahead Schutz)
+        # Wir definieren hier genau, was wir zum Zeitpunkt des Handelns wissen durften
         df = df.with_columns([
-            ((pl.col("bull_fvg").cum_sum() > 0) & (pl.col("l") <= pl.col("fvg_top"))).alias("long_sig"),
-            ((pl.col("bear_fvg").cum_sum() > 0) & (pl.col("h") >= pl.col("fvg_bot"))).alias("short_sig"),
-            pl.col("l").rolling_min(10).alias("sl_long"),
-            pl.col("h").rolling_max(10).alias("sl_short")
-        ]).fill_null(strategy="backward")
+            pl.col("bull_fvg").shift(1).fill_null(False).alias("can_trade_bull"),
+            pl.col("bear_fvg").shift(1).fill_null(False).alias("can_trade_bear"),
+            pl.col("bull_fvg_top").shift(1).alias("long_entry_p"),
+            pl.col("bear_fvg_bottom").shift(1).alias("short_entry_p")
+        ])
 
-        pnl_curve = jit_simulator(
-            df['o'].to_numpy(), df['h'].to_numpy(),
-            df['l'].to_numpy(), df['c'].to_numpy(),
-            df['long_sig'].to_numpy(), df['short_sig'].to_numpy(),
-            df['fvg_top'].to_numpy(),
-            df['sl_long'].to_numpy(),
-            (df['fvg_top'] + (df['fvg_top'] - df['sl_long']) * self.rrr).to_numpy(),
-            self.initial_balance, self.risk_percent
-        )
+        # 3. Trigger-Bedingungen (Die Korrektur)
+        # Long: Wir wussten vom Gap UND das aktuelle Low berührt das alte Top
+        l_cond = (pl.col("can_trade_bull")) & (pl.col("l") <= pl.col("long_entry_p"))
 
-        # WICHTIG: Hier nutzen wir den dynamischen Namen!
-        return df.with_columns(pl.Series(self.pnl_col, pnl_curve))
+        # Short: Wir wussten vom Gap UND das aktuelle High berührt die alte Unterkante
+        # HIER war der Fehler: High ('h') muss das Level von unten testen!
+        s_cond = (pl.col("can_trade_bear")) & (pl.col("h") >= pl.col("short_entry_p"))
+
+        # 4. Signale setzen (set_signals nutzt intern fill_null)
+        df = self.set_signals(df, long=l_cond, short=s_cond)
+
+        # 5. Stop-Loss & Take-Profit basierend auf den geshifteten Einstiegspreisen
+        df = self.set_exit(df, entry_long="long_entry_p", entry_short="short_entry_p")
+
+        # 6. Ausführung: Nutze NUR die geshifteten Preis-Spalten!
+        return self.execute(df, entry_long="long_entry_p", entry_short="short_entry_p")

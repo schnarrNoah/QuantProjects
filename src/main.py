@@ -4,25 +4,26 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from config.config import *
 from src.utils.api import API
 from src.fast_pipeline import Pipeline
-from src.strategy.smc_strad import SMCStrategy
+from src.strategy.smc_strad import *
+from src.strategy.rsi_strad import *
 
-# BASE_DIR ist C:\dev\QuantProjects
+
 BASE_DIR = Path(__file__).resolve().parent
-
-# Der Pfad zur sauberen Parquet-Datei
 PARQUET_FILE = Path("C:/dev/QuantProjects/Cryptocurrencies/BTCUSD/btc_1min_clean.parquet")
-# Der Ordner, in dem die Datei liegt
 DATA_DIR = PARQUET_FILE.parent
 
+
 def run_pipeline():
-    my_strategies = [
+    my_strategies = \
+    [
         SMCStrategy(name="SMC_1to2", rrr=1.0),
-        #SMCStrategy(name="SMC_1to3", rrr=3.0) #  dieselbe Strategie mit anderen Settings testen!
+        #RSIStrategy(name="SMC_1to3", rrr=3.0)
     ]
+
     pipe = Pipeline(
         data_path=PARQUET_FILE,
-        start_date="2026-02-17T00:00:00",
-        end_date="2026-02-23T23:59:59",
+        start_date="2025-02-01T00:00:00",
+        end_date="2025-12-01T23:59:59",
         start_time="14:30",
         end_time="16:30",
         session=None,
@@ -41,6 +42,10 @@ def download_market_candles():
     )
     downloader.run()  # Die API kümmert sich jetzt selbst um den Rest!
 
+
+######################################################
+
+
 def main():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -50,6 +55,7 @@ def main():
     else:
         print("Running backtest pipeline...")
         run_pipeline()
+
 
 if __name__ == "__main__":
     main()

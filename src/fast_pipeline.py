@@ -12,10 +12,7 @@ class Pipeline:
         self.start_time = start_time
         self.end_time = end_time
         self.session = session
-
-        # Sicherstellen, dass strategies eine Liste ist
-        self.strategies = strategies if isinstance(strategies, list) else [strategies]
-
+        self.strategies = strategies if isinstance(strategies, list) else [strategies] # Sicherstellen, dass strategies eine Liste ist
         self.raw_data = None
         self.trading_data = None
 
@@ -33,28 +30,24 @@ class Pipeline:
 
     # NEUE METHODE: Iteriert über alle übergebenen Strategien
     def execute_strategies(self):
-        if self.trading_data is None or self.trading_data.height == 0:
-            print("Keine Daten zum Traden vorhanden.")
-            return self
+        if self.trading_data is None: return self
 
-        print("--- Executing Strategies ---")
         for strat in self.strategies:
             print(f"-> Processing: {strat.name}")
-            # 1. Indikatoren für diese Strategie berechnen
-            self.trading_data = strat.prepare_features(self.trading_data)
-            # 2. JIT Simulator für diese Strategie ausführen
-            self.trading_data = strat.run_logic(self.trading_data)
+
+            # ÄNDERUNG HIER: Nur noch eine Methode aufrufen
+            # Wir nennen sie 'run', um dem minimalistischen Stil treu zu bleiben
+            self.trading_data = strat.run(self.trading_data)
 
             final_pnl = self.trading_data[strat.pnl_col][-1]
             print(f"   Backtest {strat.name} beendet. Final Balance: {final_pnl:.2f} USD")
-
         return self
 
     def visualize(self):
         # Ermittle den Ordner, in dem DIESE Datei liegt
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        template_path = os.path.join(base_dir, "layout.html")
-        assets_dir = os.path.join(base_dir, "assets")
+        template_path = os.path.join(base_dir, "view", "layout.html")
+        assets_dir = os.path.join(base_dir, "view", "assets")
 
         # Dash explizit sagen, wo die Assets (CSS) liegen
         app = dash.Dash(__name__, assets_folder=assets_dir)
@@ -99,7 +92,6 @@ class Pipeline:
 
             from src.view.webviewer import visualize_on_html
             visualize_on_html(df_chart, df_perf, total_candles_final, start_bal, end_bal, "BTC/USD")
-
         return self
 
 
