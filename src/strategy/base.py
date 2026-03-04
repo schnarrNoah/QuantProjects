@@ -1,10 +1,11 @@
 # src/strategy/base.py
 import polars as pl
+from src.config.config import BALANCE, RISK_PERCENT
 from src.execution.trader import jit_simulator
 from src.processor.filter_time import session
 
 class BaseStrategy:
-    def __init__(self, name, initial_balance=10000, risk_percent=0.01, rrr=False):
+    def __init__(self, name, initial_balance, risk_percent, rrr=None):
         self.name = name
         self.initial_balance = initial_balance
         self.risk_percent = risk_percent

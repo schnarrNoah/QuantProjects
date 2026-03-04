@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 
-
+# just in time simulator
 @njit(fastmath=True)
 def jit_simulator(o, h, l, c,
                   long_entries, short_entries,

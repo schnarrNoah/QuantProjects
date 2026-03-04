@@ -6,3 +6,5 @@ dash
 numba
 redis
 flask
+pyyaml
+python-dotenv

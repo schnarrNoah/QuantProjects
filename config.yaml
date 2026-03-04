@@ -1,0 +1,32 @@
+# BACKTEST SETTINGS
+backtest:
+  start_date: "2024-06-01T00:00:00"
+  end_date: "2026-03-03T23:59:59"
+  start_time: "14:30"
+  end_time: "16:30"
+  session: "ny"
+  balance: 50000
+  risk_percent: 0.01
+
+# PATHS (Relativ Root)
+paths:
+  data_relative: "Cryptocurrencies/BTCUSD/btc_1min.parquet"
+
+# STRATEGIES
+active_strategies:
+  - active: true
+    class_name: "SMC_NY_Strategy"
+    display_name: "SMC_Aggressive_RRR_3"
+    params:
+      rrr: 3.0
+  - active: false
+    class_name: "SMC_NY_Strategy"
+    display_name: "SMC_Standard_RRR_1"
+    params:
+      rrr: 1.0
+
+# DOWNLOAD CONFIGURATION
+download:
+  tickers: ["X:BTCUSD"]
+  frame: "minute"
+  start_fallback: "2025-01-01"

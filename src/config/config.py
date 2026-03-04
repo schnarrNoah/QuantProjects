@@ -1,36 +1,27 @@
+import yaml
 from pathlib import Path
 
-# Path
+# Basis-Path dynamic
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-# Marketdata
-PARQUET_FILE = PROJECT_ROOT / "Cryptocurrencies" / "BTCUSD" / "btc_1min.parquet"
 
+# load YAML
+yaml_path = PROJECT_ROOT / "config.yaml"
+with open(yaml_path, 'r') as f:
+    _data = yaml.safe_load(f)
 
-# BACKTEST TIMEFRAME & SESSIONS
-START_DATE = "2025-01-01T00:00:00"
-END_DATE   = "2025-12-31T23:59:59"
-START_TIME = "14:30"
-END_TIME   = "16:30"
-SESSION    = "ny"
+PARQUET_FILE = PROJECT_ROOT / _data['paths']['data_relative']
 
-# STRATEGIES
-ACTIVE_STRATEGIES = [
-    {
-        "active": True,
-        "class_name": "SMC_NY_Strategy",
-        "display_name": "SMC_Aggressive_RRR_3",
-        "params": {"rrr": 3.0}
-    },
-    {
-        "active": False,
-        "class_name": "SMC_NY_Strategy",
-        "display_name": "SMC_Standard_RRR_1",
-        "params": {"rrr": 1.0}
-    }
-]
+# Vars
+START_DATE = _data['backtest']['start_date']
+END_DATE = _data['backtest']['end_date']
+START_TIME = _data['backtest']['start_time']
+END_TIME = _data['backtest']['end_time']
+SESSION = _data['backtest']['session']
+BALANCE = _data['backtest']['balance']
+RISK_PERCENT = _data['backtest']['risk_percent']
 
+ACTIVE_STRATEGIES = _data['active_strategies']
 
-# DOWNLOAD CONFIGURATION
-DOWNLOAD_TICKERS = ["X:BTCUSD"]
-DOWNLOAD_FRAME = "minute"
-DOWNLOAD_START_FALLBACK = "2025-01-01"
+DOWNLOAD_TICKERS = _data['download']['tickers']
+DOWNLOAD_FRAME = _data['download']['frame']
+DOWNLOAD_START_FALLBACK = _data['download']['start_fallback']

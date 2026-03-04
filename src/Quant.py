@@ -1,6 +1,5 @@
 import sys
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 
 # Imports aus deinem Projekt
@@ -11,7 +10,6 @@ import src.strategy.smc as smc_module
 
 
 def run_pipeline():
-    """Bereitet die Strategien vor und startet die Backtest-Pipeline."""
     settings = {
         "start_date": cfg.START_DATE,
         "end_date": cfg.END_DATE,
@@ -20,27 +18,24 @@ def run_pipeline():
         "session": cfg.SESSION
     }
 
-    # Strategien dynamisch instanziieren (nur wenn active=True)
     my_strategies = []
     for strat_conf in cfg.ACTIVE_STRATEGIES:
-        if strat_conf.get("active", False): # Prüft das neue Flag
+        if strat_conf.get("active", False):
             strat_class = getattr(smc_module, strat_conf["class_name"])
+            # Wir übergeben hier die Parameter aus dem YAML
             instance = strat_class(
                 name=strat_conf["display_name"],
+                initial_balance=cfg.BALANCE,
+                risk_percent=cfg.RISK_PERCENT,
                 **strat_conf["params"]
             )
             my_strategies.append(instance)
 
     if not my_strategies:
-        print("Abbruch: Keine aktiven Strategien in der Config gefunden!")
+        print("Abbruch: Keine aktiven Strategien gefunden.")
         return
 
-    # Pipeline mit Config-Pfad ausführen
-    pipe = Pipeline(
-        data_path=cfg.PARQUET_FILE,
-        strategies=my_strategies,
-        filter_settings=settings
-    )
+    pipe = Pipeline(data_path=cfg.PARQUET_FILE, strategies=my_strategies, filter_settings=settings)
     pipe.run()
 
 
