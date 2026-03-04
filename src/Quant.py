@@ -1,10 +1,12 @@
-import sys
+import sys, os
 from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 from src.utils.api import API
 from src.core.fast_pipeline import Pipeline
 from src.strategy.smc import *
+from dotenv import load_dotenv
 
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 BASE_DIR = Path(__file__).resolve().parent
 #PARQUET_FILE = Path("C:/dev/QuantProjects/Cryptocurrencies/BTCUSD/btc_1min.parquet")
 PARQUET_FILE = Path("/Users/n/Python_Apps/QuantProjects/Cryptocurrencies/BTCUSD/btc_1min.parquet")
@@ -34,7 +36,7 @@ def run_pipeline():
 
 def download_market_candles():
     downloader = API(
-        api_key=POLYGON_API_KEY,
+        api_key=os.getenv("APIKEY_MASSIVE"),
         tickers=["X:BTCUSD"],
         frame="minute",
         parquet_file=PARQUET_FILE,
@@ -47,13 +49,22 @@ def download_market_candles():
 
 
 def main():
+    project_root = Path(__file__).resolve().parent.parent
+    env_path = project_root / '.env'
+    load_dotenv(env_path)
+
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     if len(sys.argv) > 1 and sys.argv[1] == "download":
-        print("Downloading market data...")
+        api_key = os.getenv("APIKEY_MASSIVE")
+        if not api_key:
+            print(f"Abbruch: Kein API-Key in {env_path} gefunden.")
+            return
+
+        print("Status: Starte Marktdaten-Download...")
         download_market_candles()
     else:
-        print("Running backtest pipeline...")
+        print("Status: Starte Backtest-Pipeline...")
         run_pipeline()
 
 
