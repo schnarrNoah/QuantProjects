@@ -20,15 +20,20 @@ def run_pipeline():
         "session": cfg.SESSION
     }
 
-    # Strategien dynamisch instanziieren
+    # Strategien dynamisch instanziieren (nur wenn active=True)
     my_strategies = []
     for strat_conf in cfg.ACTIVE_STRATEGIES:
-        strat_class = getattr(smc_module, strat_conf["class_name"])
-        instance = strat_class(
-            name=strat_conf["display_name"],
-            **strat_conf["params"]
-        )
-        my_strategies.append(instance)
+        if strat_conf.get("active", False): # Prüft das neue Flag
+            strat_class = getattr(smc_module, strat_conf["class_name"])
+            instance = strat_class(
+                name=strat_conf["display_name"],
+                **strat_conf["params"]
+            )
+            my_strategies.append(instance)
+
+    if not my_strategies:
+        print("Abbruch: Keine aktiven Strategien in der Config gefunden!")
+        return
 
     # Pipeline mit Config-Pfad ausführen
     pipe = Pipeline(
@@ -68,7 +73,9 @@ def main():
         print(f"Status: Starte Download für {cfg.DOWNLOAD_TICKERS}...")
         download_market_candles()
     else:
-        print(f"Status: Starte Backtest mit {len(cfg.ACTIVE_STRATEGIES)} Strategien...")
+        # Zählt nur die Strategien, die aktiv sind
+        active_count = sum(1 for s in cfg.ACTIVE_STRATEGIES if s.get("active", False))
+        print(f"Status: Starte Backtest mit {active_count} aktiven Strategien...")
         run_pipeline()
 
 
