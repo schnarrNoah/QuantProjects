@@ -1,33 +1,38 @@
-import sys, os
+import sys
+import os
 from pathlib import Path
-from src.utils.api import API
-from src.core.fast_pipeline import Pipeline
-from src.strategy.smc import *
 from dotenv import load_dotenv
 
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-BASE_DIR = Path(__file__).resolve().parent
-#PARQUET_FILE = Path("C:/dev/QuantProjects/Cryptocurrencies/BTCUSD/btc_1min.parquet")
-PARQUET_FILE = Path("/Users/n/Python_Apps/QuantProjects/Cryptocurrencies/BTCUSD/btc_1min.parquet")
-DATA_DIR = PARQUET_FILE.parent
+# Imports aus deinem Projekt
+import src.config.config as cfg
+from src.utils.api import API
+from src.core.fast_pipeline import Pipeline
+import src.strategy.smc as smc_module
 
 
 def run_pipeline():
+    """Bereitet die Strategien vor und startet die Backtest-Pipeline."""
     settings = {
-        "start_date": "2025-01-01T00:00:00",
-        "end_date": "2025-12-31T23:59:59",
-        "start_time": "14:30",
-        "end_time": "16:30",
-        "session": "ny" # Die Session, in der GEHANDELT wird
+        "start_date": cfg.START_DATE,
+        "end_date": cfg.END_DATE,
+        "start_time": cfg.START_TIME,
+        "end_time": cfg.END_TIME,
+        "session": cfg.SESSION
     }
 
-    my_strategies = [
-        SMC_NY_Strategy(name="SMC", rrr=1.0),
-    ]
+    # Strategien dynamisch instanziieren
+    my_strategies = []
+    for strat_conf in cfg.ACTIVE_STRATEGIES:
+        strat_class = getattr(smc_module, strat_conf["class_name"])
+        instance = strat_class(
+            name=strat_conf["display_name"],
+            **strat_conf["params"]
+        )
+        my_strategies.append(instance)
 
+    # Pipeline mit Config-Pfad ausführen
     pipe = Pipeline(
-        data_path=PARQUET_FILE,
+        data_path=cfg.PARQUET_FILE,
         strategies=my_strategies,
         filter_settings=settings
     )
@@ -35,36 +40,35 @@ def run_pipeline():
 
 
 def download_market_candles():
+    """Führt den Datendownload basierend auf der Config aus."""
+    api_key = os.getenv("APIKEY_MASSIVE")
+    if not api_key:
+        print("Abbruch: Kein API-Key in der .env Datei gefunden.")
+        return
+
     downloader = API(
-        api_key=os.getenv("APIKEY_MASSIVE"),
-        tickers=["X:BTCUSD"],
-        frame="minute",
-        parquet_file=PARQUET_FILE,
-        start_fallback="2025-01-01"  # Nur falls die Datei noch gar nicht existiert
+        api_key=api_key,
+        tickers=cfg.DOWNLOAD_TICKERS,
+        frame=cfg.DOWNLOAD_FRAME,
+        parquet_file=cfg.PARQUET_FILE,
+        start_fallback=cfg.DOWNLOAD_START_FALLBACK
     )
-    downloader.run()  # Die API kümmert sich jetzt selbst um den Rest!
-
-
-######################################################
+    downloader.run()
 
 
 def main():
-    project_root = Path(__file__).resolve().parent.parent
-    env_path = project_root / '.env'
-    load_dotenv(env_path)
+    # Umgebung laden (Pfade & .env)
+    load_dotenv(cfg.PROJECT_ROOT / ".env")
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    # Ordner erstellen, falls sie fehlen (Logik gehört in die Main)
+    cfg.PARQUET_FILE.parent.mkdir(parents=True, exist_ok=True)
 
+    # CLI-Logik: Download oder Backtest?
     if len(sys.argv) > 1 and sys.argv[1] == "download":
-        api_key = os.getenv("APIKEY_MASSIVE")
-        if not api_key:
-            print(f"Abbruch: Kein API-Key in {env_path} gefunden.")
-            return
-
-        print("Status: Starte Marktdaten-Download...")
+        print(f"Status: Starte Download für {cfg.DOWNLOAD_TICKERS}...")
         download_market_candles()
     else:
-        print("Status: Starte Backtest-Pipeline...")
+        print(f"Status: Starte Backtest mit {len(cfg.ACTIVE_STRATEGIES)} Strategien...")
         run_pipeline()
 
 
