@@ -1,5 +1,5 @@
 from src.strategy.base import BaseStrategy
-import src.process.filter_fvg as ind
+import src.processor.filter_fvg as ind
 import polars as pl
 
 
